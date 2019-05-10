@@ -119,11 +119,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     }
     else
     {
-      digitalWrite(pin_led, LOW);
-      timestamp = millis();
       turnOffAfter = command.toInt();
-      Serial.print("turnOffAfter: ");
-      Serial.println(turnOffAfter);
+      if (turnOffAfter > 0)
+      {
+        digitalWrite(pin_led, LOW);
+        timestamp = millis();
+        Serial.print("turnOffAfter: ");
+        Serial.println(turnOffAfter);
+      }
     }
   }
   else if (type == WStype_CONNECTED)
