@@ -30,7 +30,7 @@
 
         div {
             width: 500px;
-            height: 250px;
+            height: 400px;
             background-color: white;
 
             position: absolute;
@@ -51,11 +51,17 @@
                 console.log(event.data);
             }
         }
-        function toggle() {
-            Socket.send("toggle");
+        function toggle_1() {
+            Socket.send("toggle_1");
         }
-        function turnOff() {
-            Socket.send("turnoff");
+        function toggle_2() {
+            Socket.send("toggle_2");
+        }
+        function turnOff_1() {
+            Socket.send("turnoff_1");
+        }
+        function turnOff_2() {
+            Socket.send("turnoff_2");
         }
         function setTimer() {
             time = document.getElementById("charge_time").value;
@@ -71,14 +77,35 @@
 <body onload="javascript:init()">
     <div>
         <table cellpadding="10">
-            <tr>
-                <td align="center"> <button class="button" onclick="toggle()">Toggle</button></td>
-                <td align="center"><button class="button" onclick="turnOff()">Off</button></td>
+            <tr bgcolor=#F92672>
+                <td align="center"> <button class="button" 
+                    onclick="toggle_1()">Charger</button></td>
+                <td align="center"><button class="button" 
+                    onclick="turnOff_1()">OFF</button></td>
             </tr>
+            
             <tr bgcolor=#66D9EF>
-                <td><button class="button" onclick="setTimer()">Timer</button></td>
-                <td><input style="font-size:50px;" size="5" id="charge_time" type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'');" placeholder="seconds" ></td>
+                <td align="center">
+                    <button class="button" onclick="setTimer()">Timer</button>
+                </td>
+                <td>
+                    <input style="font-size:50px;" size="5" id="charge_time" 
+                        type="text" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'');" 
+                        placeholder="seconds" >
+                </td>
             </tr>
+
+            <tr bgcolor=#AE81FF>
+                <td align="center">
+                    <button onclick="toggle_2()" 
+                        class="button">TV</button>
+                </td>
+                <td align="center" >
+                    <button class="button" onclick="turnOff_2()">OFF</button>
+                </td>
+            </tr>
+
         </table>
     </div>
 </body>

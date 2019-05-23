@@ -6,7 +6,9 @@
 ESP8266WebServer server;
 WebSocketsServer webSocket = WebSocketsServer(81);
 
-uint8_t pin_led = 2;
+uint8_t socket_1 = 16; // D0
+uint8_t socket_2 = 5;  // D1
+
 char *ssid = "";
 char *password = "";
 
@@ -45,7 +47,7 @@ char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
 
         div {
             width: 500px;
-            height: 250px;
+            height: 400px;
             background-color: white;
 
             position: absolute;
@@ -66,11 +68,17 @@ char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
                 console.log(event.data);
             }
         }
-        function toggle() {
-            Socket.send("toggle");
+        function toggle_1() {
+            Socket.send("toggle_1");
         }
-        function turnOff() {
-            Socket.send("turnoff");
+        function toggle_2() {
+            Socket.send("toggle_2");
+        }
+        function turnOff_1() {
+            Socket.send("turnoff_1");
+        }
+        function turnOff_2() {
+            Socket.send("turnoff_2");
         }
         function setTimer() {
             time = document.getElementById("charge_time").value;
@@ -86,14 +94,35 @@ char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
 <body onload="javascript:init()">
     <div>
         <table cellpadding="10">
-            <tr>
-                <td align="center"> <button class="button" onclick="toggle()">Toggle</button></td>
-                <td align="center"><button class="button" onclick="turnOff()">Off</button></td>
+            <tr bgcolor=#F92672>
+                <td align="center"> <button class="button" 
+                    onclick="toggle_1()">Charger</button></td>
+                <td align="center"><button class="button" 
+                    onclick="turnOff_1()">OFF</button></td>
             </tr>
+            
             <tr bgcolor=#66D9EF>
-                <td><button class="button" onclick="setTimer()">Timer</button></td>
-                <td><input style="font-size:50px;" size="5" id="charge_time" type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'');" placeholder="seconds" ></td>
+                <td align="center">
+                    <button class="button" onclick="setTimer()">Timer</button>
+                </td>
+                <td>
+                    <input style="font-size:50px;" size="5" id="charge_time" 
+                        type="text" 
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'');" 
+                        placeholder="seconds" >
+                </td>
             </tr>
+
+            <tr bgcolor=#AE81FF>
+                <td align="center">
+                    <button onclick="toggle_2()" 
+                        class="button">TV</button>
+                </td>
+                <td align="center" >
+                    <button class="button" onclick="turnOff_2()">OFF</button>
+                </td>
+            </tr>
+
         </table>
     </div>
 </body>
@@ -107,22 +136,32 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     char *cmd = (char *)payload;
     String command = cmd;
 
-    if (command == "toggle")
+    if (command == "toggle_1")
     {
-      digitalWrite(pin_led, !digitalRead(pin_led));
-      Serial.println("toggled");
+      digitalWrite(socket_1, !digitalRead(socket_1));
+      Serial.println("socket_1 toggled");
     }
-    else if (command.equals("turnoff"))
+    else if (command == "toggle_2")
     {
-      digitalWrite(pin_led, HIGH);
-      Serial.println("turned off");
+      digitalWrite(socket_2, !digitalRead(socket_2));
+      Serial.println("socket_2 toggled");
+    }
+    else if (command.equals("turnoff_1"))
+    {
+      digitalWrite(socket_1, HIGH);
+      Serial.println("turned off socket_1");
+    }
+    else if (command.equals("turnoff_2"))
+    {
+      digitalWrite(socket_2, HIGH);
+      Serial.println("turned off socket_2");
     }
     else
     {
       turnOffAfter = command.toInt();
       if (turnOffAfter > 0)
       {
-        digitalWrite(pin_led, LOW);
+        digitalWrite(socket_1, LOW);
         timestamp = millis();
         Serial.print("turnOffAfter: ");
         Serial.println(turnOffAfter);
@@ -139,8 +178,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
 void setup()
 {
-  pinMode(pin_led, OUTPUT);
-  digitalWrite(pin_led, HIGH);
+  pinMode(socket_1, OUTPUT);
+  pinMode(socket_2, OUTPUT);
+  digitalWrite(socket_1, HIGH);
+  digitalWrite(socket_2, HIGH);
 
   WiFi.begin(ssid, password);
   WiFi.mode(WIFI_STA);
@@ -174,7 +215,7 @@ void loop()
   {
     turnOffAfter = 0;
     timestamp = 0;
-    digitalWrite(pin_led, HIGH);
+    digitalWrite(socket_1, HIGH);
   }
 
   if (Serial.available() > 0)
