@@ -9,8 +9,8 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 uint8_t socket_1 = 16; // D0
 uint8_t socket_2 = 5;  // D1
 
-char *ssid = "";
-char *password = "";
+const char *ssid = "";
+const char *password = "";
 
 unsigned int turnOffAfter = 0; // time duration in seconds
 unsigned long timestamp = 0;   // time at which on duration is set
@@ -176,6 +176,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   }
 }
 
+void reset(){
+  server.send(204);
+  ESP.restart();
+}
+
 void setup()
 {
   pinMode(socket_1, OUTPUT);
@@ -200,6 +205,8 @@ void setup()
   server.on("/", []() {
     server.send_P(200, "text/html", webpage);
   });
+
+  server.on("/reset",reset);
 
   server.begin();
   webSocket.begin();
