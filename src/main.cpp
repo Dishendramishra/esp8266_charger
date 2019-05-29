@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <WebSocketsServer.h>
+#include <ArduinoOTA.h>
 
 ESP8266WebServer server;
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -14,6 +15,9 @@ const char *password = "";
 
 unsigned int turnOffAfter = 0; // time duration in seconds
 unsigned long timestamp = 0;   // time at which on duration is set
+
+bool ota_flag = true;
+uint16_t ota_time_elapsed = 0;
 
 char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
 <html>
@@ -177,7 +181,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 
 void reset(){
-  server.send(204);
+  server.send_P(200, "text/html", webpage);
+  delay(5000);
   ESP.restart();
 }
 
@@ -188,9 +193,9 @@ void setup()
   digitalWrite(socket_1, HIGH);
   digitalWrite(socket_2, HIGH);
 
-  WiFi.begin(ssid, password);
   WiFi.mode(WIFI_STA);
   Serial.begin(115200);
+  WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -202,11 +207,55 @@ void setup()
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
+  /////////////////////////////////////////////////////////////////////////////
+  //          OTA Handling Setup
+  /////////////////////////////////////////////////////////////////////////////
+   ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_SPIFFS
+      type = "filesystem";
+    }
+
+    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS 
+    // using SPIFFS.end()
+    Serial.println("Start updating " + type);
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+  });
+  ArduinoOTA.begin();
+  /////////////////////////////////////////////////////////////////////////////
+
   server.on("/", []() {
     server.send_P(200, "text/html", webpage);
   });
 
   server.on("/reset",reset);
+
+  server.on("/setflag",[](){
+    server.send(200,"text/plain", "Setting flag...");
+    ota_flag = true;
+    ota_time_elapsed = 0;
+  });
 
   server.begin();
   webSocket.begin();
@@ -217,6 +266,22 @@ void loop()
 {
   webSocket.loop();
   server.handleClient();
+
+  /////////////////////////////////////////////////////////////////////////////
+  //        OTA Handler
+  /////////////////////////////////////////////////////////////////////////////
+  if(ota_flag)
+  {
+    uint16_t time_start = millis();
+    while(ota_time_elapsed < 30000)
+    {
+      ArduinoOTA.handle();
+      ota_time_elapsed = millis()-time_start;
+      delay(10);
+    }
+    ota_flag = false;
+  }
+  /////////////////////////////////////////////////////////////////////////////
 
   if (timestamp != 0 && (millis() - timestamp > turnOffAfter * 1000))
   {
